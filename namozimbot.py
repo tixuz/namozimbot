@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-from config import namozbottoken, namozapibase
-
+from config import namozbottoken, namozapibase, namozadmin
+# config.py fayliga bot tokenini yozing, hamda namoz api asosiy URLsini
+# bot tokenini Telegramda @botfather dan olasiz
+# namoz api namunasi = 'http://api.aladhan.com/v1/calendar?method=14&school=1&'
 bot_token = namozbottoken
 api_base = namozapibase
+admin = namozadmin
 auth_token = ""
 arr = {}
 
@@ -22,62 +25,28 @@ InlineKeyboardMarkup = types.InlineKeyboardMarkup
 bot = telebot.TeleBot(bot_token)
 
 
-# Browse list of Regions
-# goto last visited region
-# goto last visited district
-# goto last visited school
-# goto last visited class
-# Region Name, Code
-# Browse list of Districts
-# Browse list of Schools
-# Choose school by code
-# /region 123123123
-# /district 123123123
-# /school 123123123
-# Browse list of classes
-# Add Students
-# /addstudents 2020-06-16
-# first_name;middle_name;last_name;year;month;day;identity_document
-
-def extract_region(arg):
-    return arg.lstrip('/region ')  # to work with command arguments
-
 
 @bot.message_handler(commands=['start', 'help'])
 def myhelp(message):
-    answer = help_menu(bot, message, auth_token, api_base)
+    initialize_arr(bot, message, auth_token, api_base)
+    #asosiy ma'lumotlar massivga qo'yiladi
+    answer = help_menu(bot, message)
     bot.send_message(chat_id=answer["chat_id"],
                      text=answer["text"],
                      parse_mode=answer["parse_mode"],
                      reply_markup=answer["reply_markup"])
 
 
-def help_menu(bot, message, auth_token, api_base, reply_markup=None):
+def help_menu(bot, message):
     # this part is for handling arr[], TG name and API data to arr[] #start
     global arr
-    bot_id = int(bot.get_me().id)
-    chat_id = message.chat.id
-    auth_token = auth_token
-    api_base = api_base
-    tg_first_name = (message.chat.first_name) if message.chat.first_name is not None else "NoFirstName"
-    tg_last_name = (message.chat.last_name) if message.chat.last_name is not None else "NoLastName"
-    if not bot_id in arr:
-        arr[bot_id] = {}
-    if not chat_id in arr[bot_id]:
-        arr[bot_id][chat_id] = {}
-    tg_user = str(chat_id) + ": " + tg_first_name + " " + tg_last_name
-    if not 'tg_user' in arr[bot_id][chat_id]:
-        arr[bot_id][chat_id]['tg_user'] = tg_user
-    if not 'auth_token' in arr[bot_id][chat_id]:
-        arr[bot_id][chat_id]['auth_token'] = auth_token
-    if not 'api_base' in arr[bot_id][chat_id]:
-        arr[bot_id][chat_id]['api_base'] = api_base
-    # this part is for handling TG name and API data to arr[] #end
+    initialize_arr(bot, message, auth_token, api_base)
 
     keyboard = InlineKeyboardMarkup(row_width=1)
-    url_button = InlineKeyboardButton(text="Men ham namoz o'qiyman (ziyouz)", callback_data="/menhamuz")
-    help_button = InlineKeyboardButton(text="Я тоже умею совершать намаз", callback_data="/menham")
-    callback_button = InlineKeyboardButton(text="Arab yozuvi", callback_data="/arab")
+    namoz_button = InlineKeyboardButton(text="Namoz vaqtlari", callback_data="/namoz")
+    help_button = InlineKeyboardButton(text="Yordam", callback_data="/help")
+    menham_button = InlineKeyboardButton(text="Я тоже умею совершать намаз", url="https://www.labirint.ru/books/126147/")
+    menhamuz_button = InlineKeyboardButton(text="Men ham namoz o'qiyman", url="http://www.ziyouz.com/index.php?option=com_remository&Itemid=57&func=fileinfo&id=355")
     row = [url_button, help_button, callback_button]
     keyboard.add(*row)
     reply_markup = keyboard
@@ -99,9 +68,7 @@ def help_menu_message(bot, message):
     text += "\n🤖 Namoz vaqtini bilish uchun lokatsiyani yuboring\n"
     text += "====💭BUYRUQLAR💭====\n"
     text += "/namoz - Namoz vaqtini bilish (lokatsiyani yuborish orqali)\n"
-    text += "/menhamuz - Men ham namoz o'qishni bilaman (ziyouz) kitobini yuklab olish\n"
-    text += "/menham - Я тоже умею совершать намаз kitobini yuklab olish\n"
-    text += "/arab  - Пропись арабского языка китобини yuklab olish\n"
+    text += "/yordam - Yordam olish\n"
     text += "Namoz vaqtini bilish uchun, iltimos, lokatsiyani yuboring\n"
 
     return text
@@ -110,6 +77,7 @@ def help_menu_message(bot, message):
 @bot.message_handler(content_types=['document'])
 def handle_docs(message):
     print(message)
+#    bot.forward_message(admin,message.chat.id,message.id)
 
 
 @bot.message_handler(commands=['namoz'])
@@ -158,10 +126,13 @@ def mylocation(message):
             thishour = str(int("%s" % (now.strftime("%H"))))
             herehour = thishour
             if (timediff.group(1) is not None) and (timediff.group(2) is not None):
-                herehour = str(eval("(" + thishour + timediff.group(1) + str(int(timediff.group(2))) + ")")).zfill(2)
-            heremin = str(int("%s" % (now.strftime("%M"))))
-            thistime = herehour + "-" + heremin.zfill(2)
-            thistimep = herehour + ":" + heremin.zfill(2)
+                herehourint = eval("(" + thishour + timediff.group(1) + str(int(timediff.group(2))) + ")")
+                if herehourint >=24:
+                    herehourint = herehourint - 24
+                herehour = str(herehourint).zfill(2)
+            heremin = "%s" % (now.strftime("%M"))
+            thistime = herehour + "-" + heremin
+            thistimep = herehour + ":" + heremin
 
 
 
@@ -169,7 +140,7 @@ def mylocation(message):
       #      thistimep = "%s" % datetime.datetime.now(timezone.utc).astimezone(MYTMZ).strftime("%H:%M")
             if (today == tayming['date']['gregorian']['date']):
 
-                if thistimep > timing['Fajr'][:-6] and thistime <= timing['Sunrise'][:-6]:
+                if thistimep >= timing['Fajr'][:-6] and thistime <= timing['Sunrise'][:-6]:
                     text = "*Hozir {}:* Bomdod (Fajr) vaqti\n".format(thistimep)
                 if thistimep > timing['Sunrise'][:-6] and thistime <= timing['Dhuhr'][:-6]:
                     text = "*Hozir {}:* Choshtgoh (Zuho) vaqti\n".format(thistimep)
@@ -179,7 +150,7 @@ def mylocation(message):
                     text = "*Hozir {}:* Asr vaqti\n".format(thistimep)
                 if thistimep > timing['Sunset'][:-6] and thistime <= timing['Isha'][:-6]:
                     text = "*Hozir {}:* Shom (Mag'rib' vaqti\n".format(thistimep)
-                if thistimep > timing['Isha'][:-6]:
+                if thistimep > timing['Isha'][:-6] or thistimep < timing['Fajr'][:-6]:
                     text = "*Hozir {}:* Xufton (Isho') vaqti\n".format(thistimep)
                 text += "*Bugun:* " + today + "\n*Bomdod:* {}\n*Quyosh:* {}\n*Peshin:* {} \n*Asr:* {}\n*Shom:* {}\n*Xufton:* {}\n" \
                                               "*Namoz vaqti:* Hanafiy\n" \
