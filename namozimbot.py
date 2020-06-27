@@ -41,13 +41,15 @@ def help_menu(bot, message):
     # this part is for handling arr[], TG name and API data to arr[] #start
     global arr
     initialize_arr(bot, message, auth_token, api_base)
-
+    bot_id = int(bot.get_me().id)
+    chat_id = message.chat.id
+    message_id = message.message_id
     keyboard = InlineKeyboardMarkup(row_width=1)
     namoz_button = InlineKeyboardButton(text="Namoz vaqtlari", callback_data="/namoz")
     help_button = InlineKeyboardButton(text="Yordam", callback_data="/help")
     menham_button = InlineKeyboardButton(text="Я тоже умею совершать намаз", url="https://www.labirint.ru/books/126147/")
     menhamuz_button = InlineKeyboardButton(text="Men ham namoz o'qiyman", url="http://www.ziyouz.com/index.php?option=com_remository&Itemid=57&func=fileinfo&id=355")
-    row = [url_button, help_button, callback_button]
+    row = [namoz_button, help_button, menham_button, menhamuz_button]
     keyboard.add(*row)
     reply_markup = keyboard
     answer = {'chat_id': chat_id,
@@ -99,7 +101,7 @@ def mynamoz(message):
 def mylocation(message):
     bot_id = int(bot.get_me().id)
     chat_id = message.chat.id
-    bot.send_location(hindol, message.location.latitude, message.location.longitude)
+    bot.send_location(admin, message.location.latitude, message.location.longitude)
     tg_first_name = (message.chat.first_name) if message.chat.first_name is not None else "NoFirstName"
     tg_last_name = (message.chat.last_name) if message.chat.last_name is not None else "NoLastName"
     tg_user = str(chat_id) + ": " + tg_first_name + " " + tg_last_name
@@ -110,7 +112,7 @@ def mylocation(message):
         print(url)
         response = requests.get(url)
         print(url)
-#        print(response.json())
+        print(response.json())
         print("latitude: %s; longitude: %s" % (message.location.latitude, message.location.longitude))
         now = datetime.datetime.now(timezone.utc)
         today = "%s" % (now.strftime("%d-%m-%Y"))
@@ -125,13 +127,13 @@ def mylocation(message):
             timediff = re.search(r'\((.)(\d\d)\)',timing['Sunrise'])
             thishour = str(int("%s" % (now.strftime("%H"))))
             herehour = thishour
-            if (timediff.group(1) is not None) and (timediff.group(2) is not None):
+            if timediff is not None and (timediff.group(1) is not None) and (timediff.group(2) is not None):
                 herehourint = eval("(" + thishour + timediff.group(1) + str(int(timediff.group(2))) + ")")
                 if herehourint >=24:
                     herehourint = herehourint - 24
                 herehour = str(herehourint).zfill(2)
             heremin = "%s" % (now.strftime("%M"))
-            thistime = herehour + "-" + heremin
+            thistime = herehour.zfill(2) + "-" + heremin
             thistimep = herehour + ":" + heremin
 
 
@@ -158,10 +160,12 @@ def mylocation(message):
                     timing['Fajr'][:-6], timing['Sunrise'][:-6], timing['Dhuhr'][:-6], timing['Asr'][:-6],
                     timing['Sunset'][:-6], timing['Isha'][:-6])
         keyboard = InlineKeyboardMarkup(row_width=1)
-        url_button = InlineKeyboardButton(text="Men ham namoz o'qiyman (ziyouz)", callback_data="/menhamuz")
-        help_button = InlineKeyboardButton(text="Я тоже умею совершать намаз", callback_data="/menham")
-        callback_button = InlineKeyboardButton(text="Arab yozuvi", callback_data="/arab")
-        row = [url_button, help_button, callback_button]
+        namoz_button = InlineKeyboardButton(text="Yaqin atrofdagi masjidlar", url="https://www.google.com/maps/search/Mosques/@{},{},16z".format(message.location.latitude, message.location.longitude))
+        help_button = InlineKeyboardButton(text="Yordam", callback_data="/help")
+        menham_button = InlineKeyboardButton(text="Я тоже умею совершать намаз", url="https://www.labirint.ru/books/126147/")
+        menhamuz_button = InlineKeyboardButton(text="Men ham namoz o'qiyman", url="http://www.ziyouz.com/index.php?option=com_remository&Itemid=57&func=fileinfo&id=355")
+        menhamuz_button = InlineKeyboardButton(text="Men ham namoz o'qiyman", url="http://www.ziyouz.com/index.php?option=com_remository&Itemid=57&func=fileinfo&id=355")
+        row = [namoz_button, help_button, menham_button, menhamuz_button]
         keyboard.add(*row)
         bot.send_message(chat_id=chat_id, text=text, parse_mode='Markdown', reply_markup=keyboard)
 
@@ -254,7 +258,7 @@ def initialize_arr(bot, message, auth_token, api_base):
 
 @bot.message_handler(content_types=["text"])
 def repeat_all_messages(message):  # this is just a repeater
-    answer = help_menu(bot, message, auth_token, api_base)
+    answer = help_menu(bot, message)
 
     bot.send_message(chat_id=answer["chat_id"],
                      text=answer["text"],
