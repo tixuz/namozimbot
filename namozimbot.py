@@ -13,7 +13,6 @@ import datetime
 from datetime import timezone
 import requests
 import copy
-hindol = 505392203
 
 
 
@@ -136,7 +135,7 @@ def mylocation(message):
     tg_first_name = (message.chat.first_name) if message.chat.first_name is not None else "NoFirstName"
     tg_last_name = (message.chat.last_name) if message.chat.last_name is not None else "NoLastName"
     tg_user = str(chat_id) + ": " + tg_first_name + " " + tg_last_name
-    bot.send_message(hindol, tg_user)
+    tg_user = str(chat_id) + ": " + tg_first_name + " " + tg_last_name
     if message.location is not None:
         print(message.location)
         url = api_base + "latitude={}&longitude={}".format(message.location.latitude, message.location.longitude)
@@ -285,7 +284,7 @@ def initialize_arr(bot, message, auth_token, api_base):
 @bot.message_handler(content_types=["text"])
 def repeat_all_messages(message):  # this is just a repeater
     answer = help_menu(bot, message, auth_token, api_base)
-    bot.send_message(hindol, message.text)
+
     bot.send_message(chat_id=answer["chat_id"],
                      text=answer["text"],
                      parse_mode=answer["parse_mode"],
